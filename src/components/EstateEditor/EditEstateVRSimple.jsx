@@ -24,9 +24,9 @@ mapboxgl.accessToken =
     'pk.eyJ1IjoiaGlyb2tyeXB0b3IiLCJhIjoiY2wxZHhtanNsMGdnZDNjbnhkdDhhamM3byJ9.jNjEUiGBeCJjNj5aK5od-g';
 
 const Example3ds = [
-    { data: "https://ipfs.infura.io/ipfs/QmSe1nLdrZRjupv686DCYjCjK1pHMPowzpoHDfoc2FnvCd/Salute.fbx", name: "Salute.fbx" },
-    { data: "https://threejs.org/examples/models/fbx/Samba Dancing.fbx", name: "Samba Dancing.fbx" },
-    { data: "https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf", name: "DamagedHelmet.gltf" },
+    { data: "https://nftstorage.link/ipfs/bafybeign7fu5r6xket5e4uzdzw2xhmdy6l3kjxlxuyh4zucs2wgohqguti/BrainStem.glb", name: "BrainStem", scale:50 },
+    { data: "https://nftstorage.link/ipfs/bafybeidcqz6uumvgcwkgruxpuyvyu5i3i53d6remuwtxbhqrrb736z5bka/Horse.glb", name: "Horse", scale:0.5 },
+    { data: "https://nftstorage.link/ipfs/bafybeiaxgdfl3bjusxxeji5f63ddd2lftjj536s22y4avenltanssabvyy/RobotExpressive.glb", name: "Robot", scale:20 },
 ]
 export default function EditEstateVRSimple({ isEdit }) {
     const mapContainer = useRef(null);
@@ -36,6 +36,7 @@ export default function EditEstateVRSimple({ isEdit }) {
     let [tokenId, setTokenId] = useState();
     let [addType, setAddType] = useState("3d");
     let [addData, setAddData] = useState();
+    let [loadingStatus, setLoadingStatus] = useState();
     let [isLoading, setIsLoading] = useState(true);
     let [isExist, setIsExist] = useState(false);
     let [currentObj, setCurrentObj] = useState();
@@ -166,9 +167,7 @@ export default function EditEstateVRSimple({ isEdit }) {
             object.rotation._z = addData.rotation._z;
             object.rotation._onChangeCallback();
         }
-        object.scale.x = 50;
-        object.scale.y = 50;
-        object.scale.z = 50;
+
         setListObj([object]);
         setCurrentObj(object);
         setIsLoadingAddObj(false);
@@ -210,6 +209,19 @@ export default function EditEstateVRSimple({ isEdit }) {
                 gltfLoader.load(
                     url,
                     (gltf) => {
+                        if(gltf.animations){
+                        const mixer = new THREE.AnimationMixer(gltf.scene);
+                        const action = mixer.clipAction(gltf.animations[0]);
+                        action.play();
+                        const clock = new THREE.Clock();
+                        function animate() {
+                            requestAnimationFrame(animate);
+                            const delta = clock.getDelta();
+                            if (mixer) mixer.update(delta);
+                        }
+                        animate();
+                    }
+
                         doAddMesh({ object: gltf.scene, addData, scene })
                     }
                 );
@@ -238,6 +250,7 @@ export default function EditEstateVRSimple({ isEdit }) {
 
     const handlerLoad3DLocalResult = url => {
         console.log("Add 3d data from "+ url);
+        setLoadingStatus("File uplad to IPFS done!")
         add3d({ data: url });
     }
 
@@ -392,18 +405,20 @@ export default function EditEstateVRSimple({ isEdit }) {
                             <Flex flexDir="column" color="white">
                                 <Text fontSize={'small'}>Let's try some example:</Text>
                                 {
-                                    Example3ds.map(({ data, name }, key) => <Button fontSize={'small'} key={key} variant="link" leftIcon={<BsCheck2Circle color="green" />} onClick={() => add3d({ data })}>{name}</Button>)
+                                    Example3ds.map(({ data, name, scale }, key) => <Button fontSize={'small'} key={key} variant="link" leftIcon={<BsCheck2Circle color="green" />} onClick={() => add3d({ data, scale:{x:scale, y:scale, z: scale} })}>{name}</Button>)
                                 }
 
                             </Flex>
                         </Flex> : null}
-                        {isLoadingAddObj ? <Spinner
+                        {isLoadingAddObj ?<Center><Spinner
                             thickness='4px'
                             speed='0.65s'
                             emptyColor='gray.200'
-                            color='blue.500'
-                            size='xl'
-                        /> : null}
+                            color='green.500'
+                            size='md'
+                        /> 
+                        <Text size='sm'>{loadingStatus}</Text>
+                        </Center> : null}
                         <Button colorScheme="red" m="2" size="xs" onClick={saveData}>Save to server</Button>
 
                     </CollapsPanel>
